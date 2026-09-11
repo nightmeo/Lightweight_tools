@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>随机数生成器 · 交互式工具</title>
+    <style>
+        /* ---------- 全局重置 & 变量 ---------- */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary: #2c3e50;
+            --primary-light: #3498db;
+            --primary-bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --border: #dce4ec;
+            --text: #1e2a3a;
+            --text-muted: #5b6f82;
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+            --radius: 12px;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--primary-bg);
+            color: var(--text);
+            padding: 24px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .app {
+            max-width: 1360px;
+            width: 100%;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 32px 36px 40px;
+            transition: padding 0.2s;
+        }
+
+        /* ---------- 头部 ---------- */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            margin-bottom: 28px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--primary-bg);
+        }
+
+        .app-header h1 {
+            font-size: 26px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .app-header h1 small {
+            font-size: 15px;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        .app-header .badge {
+            font-size: 13px;
+            background: var(--primary-bg);
+            padding: 4px 14px;
+            border-radius: 30px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* ---------- 控制区 ---------- */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px 28px;
+            background: var(--primary-bg);
+            padding: 20px 24px 24px;
+            border-radius: var(--radius);
+            margin-bottom: 28px;
+            transition: all 0.2s;
+        }
+
+        .controls .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .control-group label .hint {
+            font-weight: 400;
+            color: #8a9aa8;
+            font-size: 12px;
+        }
+
+        .control-group select,
+        .control-group input[type="number"],
+        .control-group input[type="text"] {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--card-bg);
+            color: var(--text);
+            transition: border 0.2s, box-shadow 0.2s;
+            width: 100%;
+            font-family: var(--font);
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+        }
+
+        .control-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 8'%3E%3Cpath fill='%235b6f82' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+
+        .param-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 16px;
+        }
+
+        .param-row .param-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .param-row .param-item label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .param-row .param-item input {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+            background: var(--card-bg);
+            width: 100%;
+            transition: border 0.2s;
+        }
+
+        .param-row .param-item input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.12);
+        }
+
+        /* ---------- 模式切换 ---------- */
+        .mode-tabs {
+            display: flex;
+            gap: 6px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .mode-tabs button {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            font-family: var(--font);
+        }
+
+        .mode-tabs button.active {
+            background: var(--primary-light);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.25);
+        }
+
+        .mode-tabs button:hover:not(.active) {
+            background: var(--primary-bg);
+        }
+
+        /* ---------- 多维配置 (per-dim) ---------- */
+        .per-dim-container {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .per-dim-container .dim-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-muted);
+            padding-bottom: 4px;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .per-dim-container .dim-header .dim-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .per-dim-container .dim-header .dim-actions button {
+            border: none;
+            background: var(--primary-bg);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .per-dim-container .dim-header .dim-actions button:hover {
+            background: var(--border);
+        }
+
+        .per-dim-container .dim-header .dim-actions button.danger:hover {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .dim-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            display: grid;
+            grid-template-columns: 70px 1fr 1.6fr;
+            gap: 12px 18px;
+            align-items: start;
+            transition: border-color 0.2s;
+        }
+
+        .dim-card .dim-label {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text);
+            padding-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .dim-card .dim-label .badge-dim {
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .dim-card .dim-dist {
+            min-width: 0;
+        }
+
+        .dim-card .dim-params {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 12px;
+        }
+
+        .dim-card .dim-params .param-item {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .dim-card .dim-params .param-item label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .dim-card .dim-params .param-item input {
+            padding: 5px 8px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            font-size: 12px;
+            background: var(--primary-bg);
+            width: 100%;
+            transition: border 0.2s;
+        }
+
+        .dim-card .dim-params .param-item input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            background: var(--card-bg);
+        }
+
+        /* ---------- 生成按钮 & 种子 ---------- */
+        .action-row {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 16px 24px;
+            margin-top: 6px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .action-row .seed-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .action-row .seed-group input {
+            width: 100px;
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .action-row .seed-group input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.10);
+        }
+
+        .btn-generate {
+            padding: 10px 32px;
+            background: var(--primary-light);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+            font-family: var(--font);
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.25);
+        }
+
+        .btn-generate:hover {
+            background: #2980b9;
+            box-shadow: 0 6px 18px rgba(52, 152, 219, 0.30);
+        }
+
+        .btn-generate:active {
+            transform: scale(0.97);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* ---------- 结果区 ---------- */
+        .results {
+            margin-top: 8px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .results .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .results .result-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .results .result-header .result-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .results .result-header .result-actions button {
+            padding: 6px 18px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--card-bg);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            font-family: var(--font);
+        }
+
+        .results .result-header .result-actions button:hover {
+            background: var(--primary-bg);
+            border-color: var(--primary-light);
+            color: var(--primary);
+        }
+
+        /* ---------- 数据表格 ---------- */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            margin-bottom: 20px;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .table-wrap table th {
+            background: var(--primary-bg);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        .table-wrap table td {
+            padding: 8px 14px;
+            border-bottom: 1px solid var(--primary-bg);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .table-wrap table tr:hover td {
+            background: #f8fafc;
+        }
+
+        .table-wrap table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-wrap .empty-msg {
+            padding: 32px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        /* ---------- 统计摘要 ---------- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .stat-card {
+            background: var(--primary-bg);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-card .stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--text-muted);
+        }
+
+        .stat-card .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 2px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stat-card .stat-value.small {
+            font-size: 15px;
+        }
+
+        .dim-stats {
+            margin-top: 16px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+
+        .dim-stats .dim-stats-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .dim-stats .dim-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 10px;
+        }
+
+        .dim-stats .dim-stat-block {
+            background: var(--primary-bg);
+            border-radius: 8px;
+            padding: 10px 14px;
+        }
+
+        .dim-stats .dim-stat-block .dim-name {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .dim-stats .dim-stat-block .dim-stats-inner {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 2px 12px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .dim-stats .dim-stat-block .dim-stats-inner span {
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        /* ---------- 响应式 ---------- */
+        @media (max-width: 900px) {
+            .app {
+                padding: 20px 16px 28px;
+            }
+            .controls {
+                grid-template-columns: 1fr;
+                gap: 14px;
+                padding: 16px;
+            }
+            .controls .full-width {
+                grid-column: 1;
+            }
+            .param-row {
+                grid-template-columns: 1fr 1fr;
+            }
+            .dim-card {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .dim-card .dim-params {
+                grid-template-columns: 1fr 1fr;
+            }
+            .action-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .action-row .seed-group {
+                justify-content: center;
+            }
+            .btn-generate {
+                width: 100%;
+                justify-content: center;
+            }
+            .app-header h1 {
+                font-size: 21px;
+                flex-wrap: wrap;
+            }
+            .app-header h1 small {
+                font-size: 13px;
+                display: block;
+                margin-left: 0;
+            }
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding: 12px;
+            }
+            .app {
+                padding: 14px 10px 20px;
+            }
+            .param-row {
+                grid-template-columns: 1fr;
+            }
+            .dim-card .dim-params {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .mode-tabs button {
+                font-size: 12px;
+                padding: 5px 8px;
+            }
+            .results .result-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .results .result-header .result-actions {
+                flex-wrap: wrap;
+            }
+            .dim-stats .dim-stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .dim-stats .dim-stat-block .dim-stats-inner {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* ---------- 工具类 ---------- */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        .mt-1 {
+            margin-top: 6px;
+        }
+
+        .gap-1 {
+            gap: 4px;
+        }
+
+        .flex-center {
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="app" id="app">
+        <!-- 头部 -->
+        <header class="app-header">
+            <h1>
+                🎲 随机数生成器
+                <small>按分布、参数、维度生成</small>
+            </h1>
+            <span class="badge">纯前端 · 11 种分布</span>
+        </header>
+
+        <!-- 控制区 -->
+        <div class="controls" id="controls">
+            <!-- 模式切换 -->
+            <div class="control-group full-width">
+                <label>生成模式</label>
+                <div class="mode-tabs" id="modeTabs">
+                    <button data-mode="single" class="active">单维</button>
+                    <button data-mode="multi-same">多维 · 相同分布</button>
+                    <button data-mode="multi-per">多维 · 不同分布</button>
+                </div>
+            </div>
+
+            <!-- 单维 / 多维相同分布 的配置 -->
+            <div id="sameDistConfig" class="full-width" style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;">
+                <div class="control-group">
+                    <label>分布 <span class="hint">(distribution)</span></label>
+                    <select id="distSelect"></select>
+                </div>
+                <div class="control-group" id="dimsGroup">
+                    <label>维度数 <span class="hint">(dims)</span></label>
+                    <input type="number" id="dimsInput" value="1" min="1" max="20" />
+                </div>
+                <div class="control-group full-width">
+                    <label>参数</label>
+                    <div class="param-row" id="paramInputs"></div>
+                </div>
+            </div>
+
+            <!-- 多维不同分布配置 -->
+            <div id="perDimConfig" class="per-dim-container hidden">
+                <div class="dim-header">
+                    <span>每个维度独立配置</span>
+                    <div class="dim-actions">
+                        <button id="addDimBtn">➕ 添加维度</button>
+                        <button id="resetDimBtn">↺ 重置</button>
+                    </div>
+                </div>
+                <div id="dimCardsContainer"></div>
+            </div>
+
+            <!-- 数量 & 种子 & 生成 -->
+            <div class="action-row">
+                <div class="control-group" style="flex:1;min-width:120px;">
+                    <label>数量 (count)</label>
+                    <input type="number" id="countInput" value="10" min="1" max="10000" style="width:100%;" />
+                </div>
+                <div class="seed-group">
+                    <label for="seedInput">种子</label>
+                    <input type="number" id="seedInput" placeholder="可选" />
+                    <span style="font-size:12px;color:var(--text-muted);">(留空随机)</span>
+                </div>
+                <button class="btn-generate" id="generateBtn">✨ 生成</button>
+            </div>
+        </div>
+
+        <!-- 结果区 -->
+        <div class="results" id="results">
+            <div class="result-header">
+                <h2 id="resultTitle">📊 生成结果</h2>
+                <div class="result-actions">
+                    <button id="exportCsvBtn" disabled>📥 导出 CSV</button>
+                    <button id="clearBtn">🗑 清空</button>
+                </div>
+            </div>
+
+            <!-- 数据表格 -->
+            <div class="table-wrap" id="tableWrap">
+                <div class="empty-msg">点击「生成」查看随机数</div>
+            </div>
+
+            <!-- 统计摘要 -->
+            <div id="statsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================================
+            //  1. 分布定义 & 采样函数
+            // ============================================================
+
+            const DIST_DEFS = {
+                uniform: {
+                    label: '均匀分布 (uniform)',
+                    params: [
+                        { name: 'min', label: 'min', default: 0, step: 'any' },
+                        { name: 'max', label: 'max', default: 1, step: 'any' }
+                    ],
+                    sample: (p) => p.min + (p.max - p.min) * Math.random()
+                },
+                int: {
+                    label: '整数均匀 (int)',
+                    params: [
+                        { name: 'min', label: 'min', default: 1, step: 1 },
+                        { name: 'max', label: 'max', default: 100, step: 1 }
+                    ],
+                    sample: (p) => Math.floor(p.min + (p.max - p.min + 1) * Math.random())
+                },
+                normal: {
+                    label: '正态分布 (normal)',
+                    params: [
+                        { name: 'mean', label: '均值', default: 0, step: 'any' },
+                        { name: 'std', label: '标准差', default: 1, step: 'any' }
+                    ],
+                    sample: (p) => {
+                        let u1, u2;
+                        do { u1 = Math.random(); } while (u1 <= 0);
+                        u2 = Math.random();
+                        const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+                        return p.mean + p.std * z;
+                    }
+                },
+                exponential: {
+                    label: '指数分布 (exponential)',
+                    params: [
+                        { name: 'rate', label: '速率 rate', default: 1, step: 'any' }
+                    ],
+                    sample: (p) => -Math.log(1 - Math.random()) / p.rate
+                },
+                poisson: {
+                    label: '泊松分布 (poisson)',
+                    params: [
+                        { name: 'lam', label: 'λ (lambda)', default: 1, step: 'any' }
+                    ],
+                    sample: (p) => {
+                        const limit = Math.exp(-p.lam);
+                        let k = 0,
+                            pr = 1.0;
+                        while (pr > limit) { k++;
+                            pr *= Math.random(); }
+                        return k - 1;
+                    }
+                },
+                binomial: {
+                    label: '二项分布 (binomial)',
+                    params: [
+                        { name: 'n', label: '试验次数 n', default: 10, step: 1 },
+                        { name: 'p', label: '成功概率 p', default: 0.5, step: 'any' }
+                    ],
+                    sample: (p) => {
+                        let s = 0;
+                        for (let i = 0; i < p.n; i++) { if (Math.random() < p.p) s++; }
+                        return s;
+                    }
+                },
+                triangular: {
+                    label: '三角分布 (triangular)',
+                    params: [
+                        { name: 'low', label: 'low', default: 0, step: 'any' },
+                        { name: 'high', label: 'high', default: 1, step: 'any' },
+                        { name: 'mode', label: 'mode', default: null, step: 'any' }
+                    ],
+                    sample: (p) => {
+                        const lo = p.low,
+                            hi = p.high;
+                        const mode = (p.mode !== null && p.mode !== undefined) ? p.mode : (lo + hi) / 2;
+                        const f = (mode - lo) / (hi - lo);
+                        const u = Math.random();
+                        if (u < f) return lo + Math.sqrt(u * (hi - lo) * (mode - lo));
+                        return hi - Math.sqrt((1 - u) * (hi - lo) * (hi - mode));
+                    }
+                },
+                lognormal: {
+                    label: '对数正态 (lognormal)',
+                    params: [
+                        { name: 'mu', label: 'μ (mu)', default: 0, step: 'any' },
+                        { name: 'sigma', label: 'σ (sigma)', default: 1, step: 'any' }
+                    ],
+                    sample: (p) => {
+                        let u1, u2;
+                        do { u1 = Math.random(); } while (u1 <= 0);
+                        u2 = Math.random();
+                        const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+                        return Math.exp(p.mu + p.sigma * z);
+                    }
+                },
+                gamma: {
+                    label: '伽马分布 (gamma)',
+                    params: [
+                        { name: 'alpha', label: '形状 α', default: 1, step: 'any' },
+                        { name: 'beta', label: '速率 β', default: 1, step: 'any' }
+                    ],
+                    sample: (p) => {
+                        const alpha = p.alpha,
+                            beta = p.beta;
+                        if (alpha < 1) {
+                            // Johnk's algorithm
+                            while (true) {
+                                const u1 = Math.random(),
+                                    u2 = Math.random();
+                                const v = u1 * u2;
+                                const w = -Math.log(v);
+                                if (u1 <= 1 / (1 + alpha)) {
+                                    if (u2 <= Math.pow(u1, alpha - 1)) return w / beta;
+                                } else {
+                                    if (u2 <= Math.exp(-(u1 - 1) / alpha)) return w / beta;
+                                }
+                            }
+                        } else {
+                            // Marsaglia & Tsang
+                            const d = alpha - 1 / 3;
+                            const c = 1 / Math.sqrt(9 * d);
+                            while (true) {
+                                let u1, u2;
+                                do { u1 = Math.random(); } while (u1 <= 0);
+                                u2 = Math.random();
+                                const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+                                let v = 1 + c * z;
+                                if (v <= 0) continue;
+                                v = v * v * v;
+                                const u = Math.random();
+                                if (u < 1 - 0.0331 * Math.pow(z, 4)) return d * v / beta;
+                                if (Math.log(u) < 0.5 * Math.pow(z, 2) + d * (1 - v + Math.log(v)))
+                                    return d * v / beta;
+                            }
+                        }
+                    }
+                },
+                weibull: {
+                    label: '威布尔分布 (weibull)',
+                    params: [
+                        { name: 'scale', label: '尺度 scale', default: 1, step: 'any' },
+                        { name: 'shape', label: '形状 shape', default: 1, step: 'any' }
+                    ],
+                    sample: (p) => p.scale * Math.pow(-Math.log(1 - Math.random()), 1 / p.shape)
+                },
+                beta: {
+                    label: '贝塔分布 (beta)',
+                    params: [
+                        { name: 'alpha', label: 'α', default: 1, step: 'any' },
+                        { name: 'beta', label: 'β', default: 1, step: 'any' }
+                    ],
+                    sample: (p) => {
+                        const gamma = DIST_DEFS.gamma.sample;
+                        const x = gamma({ alpha: p.alpha, beta: 1 });
+                        const y = gamma({ alpha: p.beta, beta: 1 });
+                        return x / (x + y);
+                    }
+                }
+            };
+
+            const DIST_NAMES = Object.keys(DIST_DEFS);
+
+            // ============================================================
+            //  2. 状态管理
+            // ============================================================
+
+            let currentMode = 'single'; // 'single' | 'multi-same' | 'multi-per'
+            let currentDist = 'uniform';
+            let currentParams = {};
+            let dims = 1;
+            let count = 10;
+            let seed = null;
+
+            // per-dim 配置: 数组 [{ dist, params }]
+            let perDimSpecs = [{ dist: 'uniform', params: { min: 0, max: 1 } }];
+
+            // 生成结果
+            let generatedData = []; // 二维数组: rows x cols
+            let generatedHeaders = [];
+
+            // ============================================================
+            //  3. DOM 引用
+            // ============================================================
+
+            const $ = (sel) => document.querySelector(sel);
+            const $$ = (sel) => document.querySelectorAll(sel);
+
+            const distSelect = $('#distSelect');
+            const dimsInput = $('#dimsInput');
+            const paramInputs = $('#paramInputs');
+            const countInput = $('#countInput');
+            const seedInput = $('#seedInput');
+            const generateBtn = $('#generateBtn');
+            const modeTabs = $('#modeTabs');
+            const sameDistConfig = $('#sameDistConfig');
+            const perDimConfig = $('#perDimConfig');
+            const dimCardsContainer = $('#dimCardsContainer');
+            const addDimBtn = $('#addDimBtn');
+            const resetDimBtn = $('#resetDimBtn');
+            const tableWrap = $('#tableWrap');
+            const statsContainer = $('#statsContainer');
+            const resultTitle = $('#resultTitle');
+            const exportCsvBtn = $('#exportCsvBtn');
+            const clearBtn = $('#clearBtn');
+
+            // ============================================================
+            //  4. 工具函数
+            // ============================================================
+
+            function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+            function isNumeric(v) { return v !== null && v !== undefined && v !== '' && !isNaN(parseFloat(v)) && isFinite(
+                v); }
+
+            function parseNum(v) { return parseFloat(v); }
+
+            function roundTo(v, places) {
+                if (places === undefined || places === null) return v;
+                const f = Math.pow(10, places);
+                return Math.round(v * f) / f;
+            }
+
+            function formatNum(v, places) {
+                if (typeof v !== 'number' || !isFinite(v)) return String(v);
+                return roundTo(v, places !== undefined ? places : 6);
+            }
+
+            // ============================================================
+            //  5. 分布参数解析 & 验证
+            // ============================================================
+
+            function getParamDefs(dist) {
+                return DIST_DEFS[dist] ? DIST_DEFS[dist].params : [];
+            }
+
+            function parseParamsFromDOM(dist, container) {
+                const defs = getParamDefs(dist);
+                const params = {};
+                const inputs = container.querySelectorAll('.param-item input');
+                inputs.forEach((inp, idx) => {
+                    const def = defs[idx];
+                    if (!def) return;
+                    let val = inp.value.trim();
+                    if (val === '') {
+                        params[def.name] = def.default !== null && def.default !== undefined ? def.default : null;
+                    } else {
+                        const num = parseNum(val);
+                        params[def.name] = isNaN(num) ? val : num;
+                    }
+                });
+                // 处理 mode 默认值
+                if (dist === 'triangular' && params.mode === null) {
+                    const lo = params.low !== undefined ? params.low : 0;
+                    const hi = params.high !== undefined ? params.high : 1;
+                    params.mode = (lo + hi) / 2;
+                }
+                return params;
+            }
+
+            function validateParams(dist, params) {
+                const errors = [];
+                const defs = getParamDefs(dist);
+                for (const def of defs) {
+                    const val = params[def.name];
+                    if (val === null || val === undefined) continue;
+                    if (typeof val === 'number') {
+                        if (['std', 'rate', 'lam', 'sigma', 'alpha', 'beta', 'scale', 'shape'].includes(def.name) && val <=
+                            0) {
+                            errors.push(`${def.label} 必须 > 0`);
+                        }
+                        if (def.name === 'n' && val < 0) errors.push('n 必须 >= 0');
+                        if (def.name === 'p' && (val < 0 || val > 1)) errors.push('p 必须在 [0,1]');
+                        if (def.name === 'min' && params.max !== undefined && val > params.max) errors.push(
+                            'min 必须 <= max');
+                        if (def.name === 'low' && params.high !== undefined && val > params.high) errors.push(
+                            'low 必须 <= high');
+                    }
+                }
+                return errors;
+            }
+
+            // ============================================================
+            //  6. 核心生成函数
+            // ============================================================
+
+            function generateWithSeed(seedVal) {
+                if (seedVal !== null && seedVal !== undefined && seedVal !== '') {
+                    // 简单的种子随机 (mulberry32 风格)
+                    let s = Number(seedVal) || 0;
+                    const random = (function(seed) {
+                        let a = seed >>> 0;
+                        return function() {
+                            a |= 0;
+                            a = a + 0x6D2B79F5 | 0;
+                            let t = Math.imul(a ^ a >>> 15, 1 | a);
+                            t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+                            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+                        };
+                    })(s + 1);
+                    // 覆盖 Math.random
+                    const origRandom = Math.random;
+                    Math.random = random;
+                    return () => { Math.random = origRandom; };
+                }
+                return null;
+            }
+
+            function generateData() {
+                // 解析当前参数
+                const mode = currentMode;
+
+                let specs = [];
+                let cols = 0;
+
+                if (mode === 'single') {
+                    const dist = currentDist;
+                    const params = parseParamsFromDOM(dist, paramInputs);
+                    const errs = validateParams(dist, params);
+                    if (errs.length > 0) {
+                        alert('参数错误:\n' + errs.join('\n'));
+                        return false;
+                    }
+                    specs = [{ dist, params }];
+                    cols = 1;
+                } else if (mode === 'multi-same') {
+                    const dist = currentDist;
+                    const params = parseParamsFromDOM(dist, paramInputs);
+                    const errs = validateParams(dist, params);
+                    if (errs.length > 0) {
+                        alert('参数错误:\n' + errs.join('\n'));
+                        return false;
+                    }
+                    const d = parseInt(dimsInput.value) || 1;
+                    if (d < 1) { alert('维度数必须 >= 1'); return false; }
+                    cols = d;
+                    specs = Array.from({ length: d }, () => ({ dist, params: { ...params } }));
+                } else { // multi-per
+                    const cards = dimCardsContainer.querySelectorAll('.dim-card');
+                    if (cards.length === 0) { alert('请至少添加一个维度'); return false; }
+                    specs = [];
+                    let ok = true;
+                    cards.forEach((card, idx) => {
+                        const dist = card.querySelector('.dim-dist select').value;
+                        const params = parseParamsFromDOM(dist, card.querySelector('.dim-params'));
+                        const errs = validateParams(dist, params);
+                        if (errs.length > 0) {
+                            alert(`维度 ${idx+1} 参数错误:\n` + errs.join('\n'));
+                            ok = false;
+                        }
+                        specs.push({ dist, params });
+                    });
+                    if (!ok) return false;
+                    cols = specs.length;
+                }
+
+                // 读取 count
+                const cnt = parseInt(countInput.value) || 10;
+                if (cnt < 1) { alert('数量必须 >= 1'); return false; }
+                const seedVal = seedInput.value.trim();
+                const seedNum = seedVal !== '' ? parseNum(seedVal) : null;
+                const restoreRand = generateWithSeed(seedNum);
+
+                // 采样
+                const data = [];
+                for (let i = 0; i < cnt; i++) {
+                    const row = specs.map((spec) => {
+                        const fn = DIST_DEFS[spec.dist].sample;
+                        try {
+                            return fn(spec.params);
+                        } catch (e) {
+                            return NaN;
+                        }
+                    });
+                    data.push(row);
+                }
+
+                if (restoreRand) restoreRand();
+
+                // 生成表头
+                let headers = [];
+                if (cols === 1) {
+                    headers = ['值'];
+                } else {
+                    headers = Array.from({ length: cols }, (_, i) => `dim_${i+1}`);
+                }
+
+                generatedData = data;
+                generatedHeaders = headers;
+                renderResults(data, headers, specs);
+                return true;
+            }
+
+            // ============================================================
+            //  7. 渲染结果
+            // ============================================================
+
+            function renderResults(data, headers, specs) {
+                if (!data || data.length === 0) {
+                    tableWrap.innerHTML = '<div class="empty-msg">暂无数据</div>';
+                    statsContainer.innerHTML = '';
+                    resultTitle.textContent = '📊 生成结果';
+                    exportCsvBtn.disabled = true;
+                    return;
+                }
+
+                const cols = headers.length;
+                const rows = data.length;
+
+                // 表格
+                let html = '<table><thead><tr><th>#</th>';
+                headers.forEach(h => { html += `<th>${h}</th>`; });
+                html += '</tr></thead><tbody>';
+                data.forEach((row, idx) => {
+                    html += `<tr><td>${idx+1}</td>`;
+                    row.forEach(v => {
+                        const val = typeof v === 'number' && isFinite(v) ? formatNum(v, 6) : String(v);
+                        html += `<td>${val}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+                tableWrap.innerHTML = html;
+
+                // 统计
+                let statsHtml = '<div class="stats-grid">';
+                // 整体统计（如果是单维或者多维相同分布，展示整体；如果是per-dim，按维度展示）
+                if (cols === 1) {
+                    const values = data.map(r => r[0]).filter(v => typeof v === 'number' && isFinite(v));
+                    if (values.length > 0) {
+                        const s = computeStats(values);
+                        statsHtml += buildStatCard('数量', rows);
+                        statsHtml += buildStatCard('最小值', formatNum(s.min));
+                        statsHtml += buildStatCard('最大值', formatNum(s.max));
+                        statsHtml += buildStatCard('均值', formatNum(s.mean));
+                        if (values.length >= 2) {
+                            statsHtml += buildStatCard('中位数', formatNum(s.median));
+                            statsHtml += buildStatCard('标准差', formatNum(s.stdev));
+                        }
+                    }
+                } else {
+                    // 多维：展示每个维度的统计
+                    statsHtml += `<div class="dim-stats full-width"><div class="dim-stats-title">📈 各维度统计</div><div class="dim-stats-grid">`;
+                    for (let d = 0; d < cols; d++) {
+                        const values = data.map(r => r[d]).filter(v => typeof v === 'number' && isFinite(v));
+                        if (values.length === 0) continue;
+                        const s = computeStats(values);
+                        const distLabel = specs && specs[d] ? DIST_DEFS[specs[d].dist].label : `dim ${d+1}`;
+                        statsHtml += `<div class="dim-stat-block">
+                                <div class="dim-name">${headers[d]} · ${distLabel}</div>
+                                <div class="dim-stats-inner">
+                                    <span>最小值 <strong>${formatNum(s.min)}</strong></span>
+                                    <span>最大值 <strong>${formatNum(s.max)}</strong></span>
+                                    <span>均值 <strong>${formatNum(s.mean)}</strong></span>
+                                    ${values.length >= 2 ? `<span>中位数 <strong>${formatNum(s.median)}</strong></span>` : ''}
+                                    ${values.length >= 2 ? `<span>标准差 <strong>${formatNum(s.stdev)}</strong></span>` : ''}
+                                </div>
+                            </div>`;
+                    }
+                    statsHtml += '</div></div>';
+                }
+                statsHtml += '</div>';
+                statsContainer.innerHTML = statsHtml;
+
+                resultTitle.textContent = `📊 生成结果  ·  ${rows} 行 × ${cols} 维`;
+                exportCsvBtn.disabled = false;
+            }
+
+            function buildStatCard(label, value) {
+                return `<div class="stat-card"><span class="stat-label">${label}</span><span class="stat-value">${value}</span></div>`;
+            }
+
+            function computeStats(arr) {
+                const sorted = [...arr].sort((a, b) => a - b);
+                const n = sorted.length;
+                const sum = sorted.reduce((s, v) => s + v, 0);
+                const mean = sum / n;
+                let median = sorted[Math.floor(n / 2)];
+                if (n % 2 === 0) median = (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+                const variance = sorted.reduce((s, v) => s + (v - mean) ** 2, 0) / n;
+                const stdev = Math.sqrt(variance);
+                return { min: sorted[0], max: sorted[n - 1], mean, median, stdev };
+            }
+
+            // ============================================================
+            //  8. CSV 导出
+            // ============================================================
+
+            function exportCSV() {
+                if (!generatedData || generatedData.length === 0) return;
+                const headers = ['index', ...generatedHeaders];
+                let csv = headers.join(',') + '\n';
+                generatedData.forEach((row, idx) => {
+                    const vals = row.map(v => {
+                        if (typeof v === 'number' && isFinite(v)) return String(v);
+                        return `"${String(v).replace(/"/g,'""')}"`;
+                    });
+                    csv += [idx + 1, ...vals].join(',') + '\n';
+                });
+                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `random_${new Date().toISOString().slice(0,10)}.csv`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+            }
+
+            // ============================================================
+            //  9. UI 更新函数
+            // ============================================================
+
+            function populateDistSelect(select, selected) {
+                select.innerHTML = '';
+                DIST_NAMES.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = DIST_DEFS[name].label;
+                    if (name === selected) opt.selected = true;
+                    select.appendChild(opt);
+                });
+            }
+
+            function buildParamInputs(dist, container, values) {
+                const defs = getParamDefs(dist);
+                container.innerHTML = '';
+                defs.forEach(def => {
+                    const div = document.createElement('div');
+                    div.className = 'param-item';
+                    const label = document.createElement('label');
+                    label.textContent = def.label;
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.step = def.step === 'any' ? 'any' : String(def.step);
+                    const val = values && values[def.name] !== undefined ? values[def.name] : def.default;
+                    input.value = (val !== null && val !== undefined) ? val : '';
+                    input.placeholder = def.default !== null && def.default !== undefined ? String(def.default) : '';
+                    div.appendChild(label);
+                    div.appendChild(input);
+                    container.appendChild(div);
+                });
+                // 为 triangular 的 mode 添加特殊处理
+                if (dist === 'triangular') {
+                    const items = container.querySelectorAll('.param-item');
+                    if (items.length >= 3) {
+                        const modeInput = items[2].querySelector('input');
+                        if (modeInput) {
+                            modeInput.placeholder = '默认 midpoint';
+                            modeInput.step = 'any';
+                        }
+                    }
+                }
+            }
+
+            function updateSameDistUI() {
+                const dist = distSelect.value;
+                currentDist = dist;
+                // 保留当前参数值
+                const oldParams = parseParamsFromDOM(dist, paramInputs);
+                buildParamInputs(dist, paramInputs, oldParams);
+            }
+
+            function buildDimCard(index, dist, params) {
+                const card = document.createElement('div');
+                card.className = 'dim-card';
+                card.dataset.index = index;
+
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'dim-label';
+                labelDiv.innerHTML = `维度 ${index+1} <span class="badge-dim">#${index+1}</span>`;
+
+                const distDiv = document.createElement('div');
+                distDiv.className = 'dim-dist';
+                const sel = document.createElement('select');
+                populateDistSelect(sel, dist || 'uniform');
+                sel.addEventListener('change', function() {
+                    const newDist = this.value;
+                    const paramsContainer = card.querySelector('.dim-params');
+                    const oldParams = parseParamsFromDOM(newDist, paramsContainer);
+                    buildParamInputs(newDist, paramsContainer, oldParams);
+                });
+                distDiv.appendChild(sel);
+
+                const paramsDiv = document.createElement('div');
+                paramsDiv.className = 'dim-params';
+                buildParamInputs(dist || 'uniform', paramsDiv, params || {});
+
+                card.appendChild(labelDiv);
+                card.appendChild(distDiv);
+                card.appendChild(paramsDiv);
+                return card;
+            }
+
+            function renderPerDimCards() {
+                dimCardsContainer.innerHTML = '';
+                perDimSpecs.forEach((spec, idx) => {
+                    const card = buildDimCard(idx, spec.dist, spec.params);
+                    dimCardsContainer.appendChild(card);
+                });
+            }
+
+            function updatePerDimSpecsFromDOM() {
+                const cards = dimCardsContainer.querySelectorAll('.dim-card');
+                const newSpecs = [];
+                cards.forEach(card => {
+                    const dist = card.querySelector('.dim-dist select').value;
+                    const params = parseParamsFromDOM(dist, card.querySelector('.dim-params'));
+                    newSpecs.push({ dist, params });
+                });
+                perDimSpecs = newSpecs;
+            }
+
+            // ============================================================
+            //  10. 模式切换
+            // ============================================================
+
+            function setMode(mode) {
+                currentMode = mode;
+                // 更新 tabs
+                modeTabs.querySelectorAll('button').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.mode === mode);
+                });
+                // 显示/隐藏配置区
+                if (mode === 'single' || mode === 'multi-same') {
+                    sameDistConfig.style.display = 'grid';
+                    perDimConfig.classList.add('hidden');
+                    // 显示维度输入
+                    document.querySelector('#dimsGroup').style.display = mode === 'multi-same' ? 'block' : 'none';
+                    if (mode === 'single') {
+                        dimsInput.value = 1;
+                    }
+                } else {
+                    sameDistConfig.style.display = 'none';
+                    perDimConfig.classList.remove('hidden');
+                    renderPerDimCards();
+                }
+                // 清空结果
+                clearResults();
+            }
+
+            function clearResults() {
+                generatedData = [];
+                generatedHeaders = [];
+                tableWrap.innerHTML = '<div class="empty-msg">点击「生成」查看随机数</div>';
+                statsContainer.innerHTML = '';
+                resultTitle.textContent = '📊 生成结果';
+                exportCsvBtn.disabled = true;
+            }
+
+            // ============================================================
+            //  11. 事件绑定
+            // ============================================================
+
+            // 分布切换 (相同分布模式)
+            distSelect.addEventListener('change', updateSameDistUI);
+
+            // 模式切换
+            modeTabs.addEventListener('click', function(e) {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const mode = btn.dataset.mode;
+                if (mode === currentMode) return;
+                setMode(mode);
+            });
+
+            // 添加维度 (per-dim)
+            addDimBtn.addEventListener('click', function() {
+                const newSpec = { dist: 'uniform', params: { min: 0, max: 1 } };
+                perDimSpecs.push(newSpec);
+                renderPerDimCards();
+                // 更新卡片中的事件监听已经在 buildDimCard 中绑定了
+            });
+
+            // 重置维度 (per-dim)
+            resetDimBtn.addEventListener('click', function() {
+                perDimSpecs = [{ dist: 'uniform', params: { min: 0, max: 1 } }];
+                renderPerDimCards();
+            });
+
+            // 生成
+            generateBtn.addEventListener('click', function() {
+                // 如果当前是 per-dim 模式，先同步 specs
+                if (currentMode === 'multi-per') {
+                    updatePerDimSpecsFromDOM();
+                }
+                generateData();
+            });
+
+            // 导出 CSV
+            exportCsvBtn.addEventListener('click', exportCSV);
+
+            // 清空
+            clearBtn.addEventListener('click', clearResults);
+
+            // 键盘快捷键: Ctrl+Enter 生成
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    generateBtn.click();
+                }
+            });
+
+            // ============================================================
+            //  12. 初始化
+            // ============================================================
+
+            function init() {
+                // 填充分布下拉
+                populateDistSelect(distSelect, 'uniform');
+                // 构建参数输入
+                buildParamInputs('uniform', paramInputs, { min: 0, max: 1 });
+                // 设置默认模式
+                setMode('single');
+                // 初始 per-dim
+                renderPerDimCards();
+                // 清空结果
+                clearResults();
+                // 自动生成一次示例
+                setTimeout(() => {
+                    generateBtn.click();
+                }, 100);
+            }
+
+            init();
+
+        })();
+    </script>
+</body>
+</html>
