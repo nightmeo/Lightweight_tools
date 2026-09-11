@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>随机数生成器 · 应用私有目录导出</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#2c3e50;--primary-light:#3498db;--primary-bg:#f0f4f8;
+  --card-bg:#fff;--border:#dce4ec;--text:#1e2a3a;--text-muted:#5b6f82;
+  --shadow:0 8px 24px rgba(0,0,0,.06);--radius:12px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+body{font-family:var(--font);background:var(--primary-bg);color:var(--text);padding:24px;min-height:100vh;display:flex;justify-content:center;align-items:flex-start}
+.app{max-width:1360px;width:100%;background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:32px 36px 40px}
+.app-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px 20px;margin-bottom:28px;padding-bottom:16px;border-bottom:2px solid var(--primary-bg)}
+.app-header h1{font-size:26px;font-weight:600;letter-spacing:-.3px;display:flex;align-items:center;gap:10px}
+.app-header h1 small{font-size:15px;font-weight:400;color:var(--text-muted);margin-left:4px}
+.app-header .badge{font-size:13px;background:var(--primary-bg);padding:4px 14px;border-radius:30px;color:var(--text-muted);font-weight:500}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:20px 28px;background:var(--primary-bg);padding:20px 24px 24px;border-radius:var(--radius);margin-bottom:28px}
+.controls .full-width{grid-column:1/-1}
+.control-group{display:flex;flex-direction:column;gap:5px}
+.control-group label{font-size:13px;font-weight:600;color:var(--text-muted);letter-spacing:.2px;display:flex;align-items:center;gap:6px}
+.control-group label .hint{font-weight:400;color:#8a9aa8;font-size:12px}
+.control-group select,.control-group input[type="number"],.control-group input[type="text"]{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--card-bg);color:var(--text);width:100%;font-family:var(--font);transition:border .2s,box-shadow .2s}
+.control-group select:focus,.control-group input:focus{outline:none;border-color:var(--primary-light);box-shadow:0 0 0 3px rgba(52,152,219,.15)}
+.control-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 8'%3E%3Cpath fill='%235b6f82' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+.param-row{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+.param-row .param-item{display:flex;flex-direction:column;gap:2px}
+.param-row .param-item label{font-size:12px;font-weight:500;color:var(--text-muted)}
+.param-row .param-item input{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--card-bg);width:100%}
+.param-row .param-item input:focus{outline:none;border-color:var(--primary-light);box-shadow:0 0 0 3px rgba(52,152,219,.12)}
+.mode-tabs{display:flex;gap:6px;background:var(--card-bg);border-radius:8px;padding:4px;border:1px solid var(--border)}
+.mode-tabs button{flex:1;border:none;background:transparent;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text-muted);transition:all .2s;font-family:var(--font)}
+.mode-tabs button.active{background:var(--primary-light);color:#fff;box-shadow:0 2px 8px rgba(52,152,219,.25)}
+.mode-tabs button:hover:not(.active){background:var(--primary-bg)}
+.per-dim-container{grid-column:1/-1;display:flex;flex-direction:column;gap:12px;margin-top:4px}
+.per-dim-container .dim-header{display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:14px;color:var(--text-muted);padding-bottom:4px;border-bottom:1px dashed var(--border)}
+.dim-header .dim-actions{display:flex;gap:8px}
+.dim-header .dim-actions button{border:none;background:var(--primary-bg);padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-muted);font-weight:500}
+.dim-header .dim-actions button:hover{background:var(--border)}
+.dim-card{background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:grid;grid-template-columns:70px 1fr 1.6fr;gap:12px 18px;align-items:start}
+.dim-card .dim-label{font-weight:600;font-size:14px;color:var(--text);padding-top:5px}
+.dim-card .dim-dist{min-width:0}
+.dim-card .dim-dist select{width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--card-bg)}
+.dim-card .dim-params{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.dim-card .dim-params .param-item{display:flex;flex-direction:column;gap:1px}
+.dim-card .dim-params .param-item label{font-size:11px;font-weight:500;color:var(--text-muted)}
+.dim-card .dim-params .param-item input{padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--primary-bg);width:100%}
+.dim-card .dim-params .param-item input:focus{outline:none;border-color:var(--primary-light);background:var(--card-bg)}
+.action-row{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:16px 24px;margin-top:6px;padding-top:16px;border-top:1px solid var(--border)}
+.seed-group{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted)}
+.seed-group input{width:110px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px}
+.seed-group input:focus{outline:none;border-color:var(--primary-light);box-shadow:0 0 0 3px rgba(52,152,219,.10)}
+.btn-generate{padding:10px 32px;background:var(--primary-light);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s,transform .1s,box-shadow .2s;font-family:var(--font);letter-spacing:.3px;box-shadow:0 4px 12px rgba(52,152,219,.25)}
+.btn-generate:hover{background:#2980b9;box-shadow:0 6px 18px rgba(52,152,219,.30)}
+.btn-generate:active{transform:scale(.97)}
+.results{margin-top:8px}
+.result-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+.result-header h2{font-size:18px;font-weight:600;word-break:break-all}
+.result-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.result-actions button{padding:6px 18px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text-muted);font-family:var(--font)}
+.result-actions button:hover:not(:disabled){background:var(--primary-bg);border-color:var(--primary-light);color:var(--primary)}
+.result-actions button:disabled{opacity:.45;cursor:not-allowed}
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);background:var(--card-bg);margin-bottom:20px}
+.table-wrap table{width:100%;border-collapse:collapse;font-size:14px}
+.table-wrap th{background:var(--primary-bg);color:var(--text-muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.3px;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);position:sticky;top:0;z-index:2}
+.table-wrap td{padding:8px 14px;border-bottom:1px solid var(--primary-bg);font-variant-numeric:tabular-nums}
+.table-wrap tr:hover td{background:#f8fafc}
+.table-wrap tr:last-child td{border-bottom:none}
+.empty-msg{padding:32px;text-align:center;color:var(--text-muted);font-size:15px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:6px}
+.stat-card{background:var(--primary-bg);border-radius:8px;padding:12px 16px;display:flex;flex-direction:column}
+.stat-card .stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted)}
+.stat-card .stat-value{font-size:18px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+.dim-stats{margin-top:16px;border-top:1px solid var(--border);padding-top:16px}
+.dim-stats .dim-stats-title{font-size:14px;font-weight:600;color:var(--text-muted);margin-bottom:10px}
+.dim-stats .dim-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.dim-stat-block{background:var(--primary-bg);border-radius:8px;padding:10px 14px}
+.dim-stat-block .dim-name{font-weight:600;font-size:13px;color:var(--text);margin-bottom:6px}
+.dim-stats-inner{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px 12px;font-size:12.5px;color:var(--text-muted)}
+.dim-stats-inner span{display:flex;justify-content:space-between;gap:6px}
+.mini-btn{padding:4px 12px;font-size:12px;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;color:var(--text-muted);font-family:var(--font)}
+.mini-btn:hover{background:var(--primary-bg);border-color:var(--primary-light);color:var(--primary)}
+.mini-btn.danger:hover{background:#fee2e2;border-color:#ef4444;color:#b91c1c}
+.csv-panel{margin-top:26px;padding-top:22px;border-top:2px solid var(--primary-bg)}
+.csv-panel .panel-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.csv-panel .panel-head strong{font-size:15px}
+.csv-panel .panel-head .panel-actions{display:flex;gap:8px}
+.csv-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #eef2f6;font-size:13px}
+.csv-row:last-child{border-bottom:none}
+.csv-row .csv-name{flex:1;min-width:0;word-break:break-all}
+.csv-row .csv-meta{color:#8a9aa8;font-size:12px;margin-left:6px}
+.csv-row.active{background:#eaf3fb;border-radius:6px;padding-left:8px;padding-right:8px}
+@media (max-width:900px){
+  .app{padding:20px 16px 28px}
+  .controls{grid-template-columns:1fr;gap:14px;padding:16px}
+  .controls .full-width{grid-column:1}
+  .dim-card{grid-template-columns:1fr;gap:10px}
+  .action-row{flex-direction:column;align-items:stretch}
+  .seed-group{justify-content:center}
+  .btn-generate{width:100%}
+}
+@media (max-width:500px){
+  body{padding:12px}
+  .app{padding:14px 10px 20px}
+  .param-row{grid-template-columns:1fr}
+  .dim-card .dim-params{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .dim-stats-inner{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="app-header">
+    <h1>🎲 随机数生成器 <small>按分布、参数、维度生成</small></h1>
+    <span class="badge">纯前端 · 11 种分布 · 私有目录导出</span>
+  </header>
+
+  <div class="controls" id="controls">
+    <div class="control-group full-width">
+      <label>生成模式</label>
+      <div class="mode-tabs" id="modeTabs">
+        <button data-mode="single" class="active">单维</button>
+        <button data-mode="multi-same">多维 · 相同分布</button>
+        <button data-mode="multi-per">多维 · 不同分布</button>
+      </div>
+    </div>
+
+    <div id="sameDistConfig" class="full-width" style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;">
+      <div class="control-group">
+        <label>分布 <span class="hint">(distribution)</span></label>
+        <select id="distSelect"></select>
+      </div>
+      <div class="control-group" id="dimsGroup" style="display:none;">
+        <label>维度数 <span class="hint">(dims)</span></label>
+        <input type="number" id="dimsInput" value="1" min="1" max="20" />
+      </div>
+      <div class="control-group full-width">
+        <label>参数</label>
+        <div class="param-row" id="paramInputs"></div>
+      </div>
+    </div>
+
+    <div id="perDimConfig" class="per-dim-container" style="display:none;">
+      <div class="dim-header">
+        <span>每个维度独立配置</span>
+        <div class="dim-actions">
+          <button id="addDimBtn" type="button">➕ 添加维度</button>
+          <button id="resetDimBtn" type="button">↺ 重置</button>
+        </div>
+      </div>
+      <div id="dimCardsContainer"></div>
+    </div>
+
+    <div class="action-row">
+      <div class="control-group" style="flex:1;min-width:120px;">
+        <label>数量 (count)</label>
+        <input type="number" id="countInput" value="10" min="1" max="10000" />
+      </div>
+      <div class="seed-group">
+        <label for="seedInput">种子</label>
+        <input type="number" id="seedInput" placeholder="可选" />
+        <span style="font-size:12px;color:var(--text-muted);">(留空随机)</span>
+      </div>
+      <button class="btn-generate" id="generateBtn" type="button">✨ 生成</button>
+    </div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="result-header">
+      <h2 id="resultTitle">📊 生成结果</h2>
+      <div class="result-actions">
+        <button id="exportCsvBtn" type="button" disabled>💾 保存到应用私有目录</button>
+        <button id="clearBtn" type="button">🗑 清空结果</button>
+      </div>
+    </div>
+
+    <div class="table-wrap" id="tableWrap">
+      <div class="empty-msg">点击「生成」查看随机数</div>
+    </div>
+
+    <div id="statsContainer"></div>
+  </div>
+
+  <div class="csv-panel">
+    <div class="panel-head">
+      <strong>📁 应用私有目录 · 已保存文件</strong>
+      <div class="panel-actions">
+        <button id="csvQuotaBtn" class="mini-btn" type="button">查看配额</button>
+        <button id="csvRefreshBtn" class="mini-btn" type="button">刷新</button>
+        <button id="csvClearBtn" class="mini-btn danger" type="button">清空全部</button>
+      </div>
+    </div>
+    <div id="csvList" style="font-size:13px;color:var(--text-muted);">（暂无文件）</div>
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+/* ============================================================
+   1. 分布定义 & 采样
+   ============================================================ */
+const DIST_DEFS = {
+  uniform: {
+    label: '均匀分布 (uniform)',
+    params: [
+      { name: 'min', label: 'min', default: 0, step: 'any' },
+      { name: 'max', label: 'max', default: 1, step: 'any' }
+    ],
+    sample: p => p.min + (p.max - p.min) * Math.random()
+  },
+  int: {
+    label: '整数均匀 (int)',
+    params: [
+      { name: 'min', label: 'min', default: 1, step: 1 },
+      { name: 'max', label: 'max', default: 100, step: 1 }
+    ],
+    sample: p => Math.floor(p.min + (p.max - p.min + 1) * Math.random())
+  },
+  normal: {
+    label: '正态分布 (normal)',
+    params: [
+      { name: 'mean', label: '均值 mean', default: 0, step: 'any' },
+      { name: 'std', label: '标准差 std', default: 1, step: 'any' }
+    ],
+    sample: p => {
+      let u1, u2;
+      do { u1 = Math.random(); } while (u1 <= 0);
+      u2 = Math.random();
+      const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      return p.mean + p.std * z;
+    }
+  },
+  exponential: {
+    label: '指数分布 (exponential)',
+    params: [{ name: 'rate', label: '速率 rate', default: 1, step: 'any' }],
+    sample: p => -Math.log(1 - Math.random()) / p.rate
+  },
+  poisson: {
+    label: '泊松分布 (poisson)',
+    params: [{ name: 'lam', label: 'λ (lambda)', default: 1, step: 'any' }],
+    sample: p => {
+      const limit = Math.exp(-p.lam);
+      let k = 0, pr = 1.0;
+      while (pr > limit) { k++; pr *= Math.random(); }
+      return k - 1;
+    }
+  },
+  binomial: {
+    label: '二项分布 (binomial)',
+    params: [
+      { name: 'n', label: '试验次数 n', default: 10, step: 1 },
+      { name: 'p', label: '成功概率 p', default: 0.5, step: 'any' }
+    ],
+    sample: p => {
+      let s = 0;
+      for (let i = 0; i < p.n; i++) if (Math.random() < p.p) s++;
+      return s;
+    }
+  },
+  triangular: {
+    label: '三角分布 (triangular)',
+    params: [
+      { name: 'low', label: 'low', default: 0, step: 'any' },
+      { name: 'high', label: 'high', default: 1, step: 'any' },
+      { name: 'mode', label: 'mode', default: null, step: 'any' }
+    ],
+    sample: p => {
+      const lo = p.low, hi = p.high;
+      const mode = (p.mode !== null && p.mode !== undefined && p.mode !== '') ? p.mode : (lo + hi) / 2;
+      const f = (mode - lo) / (hi - lo);
+      const u = Math.random();
+      if (u < f) return lo + Math.sqrt(u * (hi - lo) * (mode - lo));
+      return hi - Math.sqrt((1 - u) * (hi - lo) * (hi - mode));
+    }
+  },
+  lognormal: {
+    label: '对数正态 (lognormal)',
+    params: [
+      { name: 'mu', label: 'μ (mu)', default: 0, step: 'any' },
+      { name: 'sigma', label: 'σ (sigma)', default: 1, step: 'any' }
+    ],
+    sample: p => {
+      let u1, u2;
+      do { u1 = Math.random(); } while (u1 <= 0);
+      u2 = Math.random();
+      const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      return Math.exp(p.mu + p.sigma * z);
+    }
+  },
+  gamma: {
+    label: '伽马分布 (gamma)',
+    params: [
+      { name: 'alpha', label: '形状 α', default: 1, step: 'any' },
+      { name: 'beta', label: '速率 β', default: 1, step: 'any' }
+    ],
+    sample: p => {
+      const alpha = p.alpha, beta = p.beta;
+      if (alpha < 1) {
+        while (true) {
+          const u1 = Math.random(), u2 = Math.random();
+          const v = u1 * u2, w = -Math.log(v);
+          if (u1 <= 1 / (1 + alpha)) {
+            if (u2 <= Math.pow(u1, alpha - 1)) return w / beta;
+          } else {
+            if (u2 <= Math.exp(-(u1 - 1) / alpha)) return w / beta;
+          }
+        }
+      } else {
+        const d = alpha - 1 / 3;
+        const c = 1 / Math.sqrt(9 * d);
+        while (true) {
+          let u1, u2;
+          do { u1 = Math.random(); } while (u1 <= 0);
+          u2 = Math.random();
+          const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+          let v = 1 + c * z;
+          if (v <= 0) continue;
+          v = v * v * v;
+          const u = Math.random();
+          if (u < 1 - 0.0331 * Math.pow(z, 4)) return d * v / beta;
+          if (Math.log(u) < 0.5 * z * z + d * (1 - v + Math.log(v))) return d * v / beta;
+        }
+      }
+    }
+  },
+  weibull: {
+    label: '威布尔分布 (weibull)',
+    params: [
+      { name: 'scale', label: '尺度 scale', default: 1, step: 'any' },
+      { name: 'shape', label: '形状 shape', default: 1, step: 'any' }
+    ],
+    sample: p => p.scale * Math.pow(-Math.log(1 - Math.random()), 1 / p.shape)
+  },
+  beta: {
+    label: '贝塔分布 (beta)',
+    params: [
+      { name: 'alpha', label: 'α', default: 1, step: 'any' },
+      { name: 'beta', label: 'β', default: 1, step: 'any' }
+    ],
+    sample: p => {
+      const g = DIST_DEFS.gamma.sample;
+      const x = g({ alpha: p.alpha, beta: 1 });
+      const y = g({ alpha: p.beta, beta: 1 });
+      return x / (x + y);
+    }
+  }
+};
+const DIST_NAMES = Object.keys(DIST_DEFS);
+
+/* ============================================================
+   2. 状态
+   ============================================================ */
+let currentMode = 'single';
+let currentDist = 'uniform';
+let perDimSpecs = [{ dist: 'uniform', params: { min: 0, max: 1 } }];
+let generatedData = [];
+let generatedHeaders = [];
+let currentSourceName = null;   // 当前结果来源（生成 or 读取的文件名）
+
+/* ============================================================
+   3. DOM
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const distSelect = $('#distSelect');
+const dimsInput = $('#dimsInput');
+const dimsGroup = $('#dimsGroup');
+const paramInputs = $('#paramInputs');
+const countInput = $('#countInput');
+const seedInput = $('#seedInput');
+const generateBtn = $('#generateBtn');
+const modeTabs = $('#modeTabs');
+const sameDistConfig = $('#sameDistConfig');
+const perDimConfig = $('#perDimConfig');
+const dimCardsContainer = $('#dimCardsContainer');
+const addDimBtn = $('#addDimBtn');
+const resetDimBtn = $('#resetDimBtn');
+const tableWrap = $('#tableWrap');
+const statsContainer = $('#statsContainer');
+const resultTitle = $('#resultTitle');
+const exportCsvBtn = $('#exportCsvBtn');
+const clearBtn = $('#clearBtn');
+
+/* ============================================================
+   4. 工具
+   ============================================================ */
+function parseNum(v) { return parseFloat(v); }
+function roundTo(v, p) { const f = Math.pow(10, p); return Math.round(v * f) / f; }
+function formatNum(v, places) {
+  if (typeof v !== 'number' || !isFinite(v)) return String(v);
+  return roundTo(v, places === undefined ? 6 : places);
+}
+function fmtBytes(n) {
+  if (!n || n < 0) return '0 B';
+  const u = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return n.toFixed(n >= 100 || i === 0 ? 0 : 1) + ' ' + u[i];
+}
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function showToast(msg, ms) {
+  ms = ms || 3200;
+  let el = document.getElementById('__toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '__toast';
+    el.style.cssText = [
+      'position:fixed', 'left:50%', 'bottom:32px', 'transform:translateX(-50%)',
+      'max-width:86vw', 'padding:10px 18px', 'border-radius:8px',
+      'background:rgba(30,42,58,.94)', 'color:#fff', 'font-size:13px',
+      'line-height:1.55', 'white-space:pre-wrap', 'word-break:break-all',
+      'z-index:99999', 'opacity:0', 'transition:opacity .25s',
+      'pointer-events:none', 'text-align:center', 'box-shadow:0 6px 20px rgba(0,0,0,.25)'
+    ].join(';');
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el.__t);
+  el.__t = setTimeout(() => { el.style.opacity = '0'; }, ms);
+}
+
+/* ============================================================
+   5. 参数解析 / 校验
+   ============================================================ */
+function getParamDefs(dist) { return DIST_DEFS[dist] ? DIST_DEFS[dist].params : []; }
+
+function parseParamsFromDOM(dist, container) {
+  const defs = getParamDefs(dist);
+  const params = {};
+  const inputs = container.querySelectorAll('.param-item input');
+  inputs.forEach((inp, idx) => {
+    const def = defs[idx];
+    if (!def) return;
+    const val = inp.value.trim();
+    if (val === '') {
+      params[def.name] = (def.default !== null && def.default !== undefined) ? def.default : null;
+    } else {
+      const num = parseNum(val);
+      params[def.name] = isNaN(num) ? val : num;
+    }
+  });
+  return params;
+}
+
+function validateParams(dist, params) {
+  const errors = [];
+  const defs = getParamDefs(dist);
+  for (const def of defs) {
+    const val = params[def.name];
+    if (typeof val !== 'number' || !isFinite(val)) continue;
+    if (['std', 'rate', 'lam', 'sigma', 'alpha', 'beta', 'scale', 'shape'].indexOf(def.name) >= 0 && val <= 0) {
+      errors.push(`${def.label} 必须 > 0（当前 ${val}）`);
+    }
+    if (def.name === 'n' && val < 0) errors.push('n 必须 >= 0');
+    if (def.name === 'p' && (val < 0 || val > 1)) errors.push('p 必须在 [0, 1] 之间');
+    if (def.name === 'min' && typeof params.max === 'number' && val > params.max)
+      errors.push('min 必须 <= max');
+    if (def.name === 'low' && typeof params.high === 'number' && val > params.high)
+      errors.push('low 必须 <= high');
+  }
+  return errors;
+}
+
+/* ============================================================
+   6. 带种子的随机数
+   ============================================================ */
+function withSeed(seedVal) {
+  if (seedVal === null || seedVal === undefined || seedVal === '') return null;
+  let a = (Number(seedVal) >>> 0) || 1;
+  const orig = Math.random;
+  Math.random = function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  return function restore() { Math.random = orig; };
+}
+
+/* ============================================================
+   7. 生成
+   ============================================================ */
+function generateData() {
+  let specs = [], cols = 0;
+
+  if (currentMode === 'multi-per') {
+    syncPerDimFromDOM();
+    if (perDimSpecs.length === 0) { alert('请至少添加一个维度'); return false; }
+    for (let i = 0; i < perDimSpecs.length; i++) {
+      const errs = validateParams(perDimSpecs[i].dist, perDimSpecs[i].params);
+      if (errs.length) { alert(`维度 ${i + 1} 参数错误：\n` + errs.join('\n')); return false; }
+    }
+    specs = perDimSpecs.map(s => ({ dist: s.dist, params: Object.assign({}, s.params) }));
+    cols = specs.length;
+  } else {
+    const dist = currentDist;
+    const params = parseParamsFromDOM(dist, paramInputs);
+    const errs = validateParams(dist, params);
+    if (errs.length) { alert('参数错误：\n' + errs.join('\n')); return false; }
+    if (currentMode === 'multi-same') {
+      const d = parseInt(dimsInput.value) || 1;
+      if (d < 1) { alert('维度数必须 >= 1'); return false; }
+      cols = d;
+      specs = Array.from({ length: d }, () => ({ dist, params: Object.assign({}, params) }));
+    } else {
+      cols = 1;
+      specs = [{ dist, params }];
+    }
+  }
+
+  const cnt = parseInt(countInput.value) || 10;
+  if (cnt < 1) { alert('数量必须 >= 1'); return false; }
+
+  const seedVal = seedInput.value.trim();
+  const restore = withSeed(seedVal === '' ? null : parseNum(seedVal));
+
+  let data;
+  try {
+    data = [];
+    for (let i = 0; i < cnt; i++) {
+      data.push(specs.map(spec => {
+        try { return DIST_DEFS[spec.dist].sample(spec.params); }
+        catch (e) { return NaN; }
+      }));
+    }
+  } finally {
+    if (restore) restore();
+  }
+
+  generatedData = data;
+  generatedHeaders = cols === 1 ? ['值'] : Array.from({ length: cols }, (_, i) => 'dim_' + (i + 1));
+  currentSourceName = null;
+  renderResults(data, generatedHeaders, specs);
+  return true;
+}
+
+/* ============================================================
+   8. 渲染结果
+   ============================================================ */
+function computeStats(arr) {
+  const s = arr.slice().sort((a, b) => a - b);
+  const n = s.length;
+  const sum = s.reduce((a, b) => a + b, 0);
+  const mean = sum / n;
+  let median = s[Math.floor(n / 2)];
+  if (n % 2 === 0) median = (s[n / 2 - 1] + s[n / 2]) / 2;
+  const variance = s.reduce((a, b) => a + (b - mean) * (b - mean), 0) / n;
+  return { min: s[0], max: s[n - 1], mean, median, stdev: Math.sqrt(variance) };
+}
+function statCard(label, value) {
+  return '<div class="stat-card"><span class="stat-label">' + label +
+         '</span><span class="stat-value">' + value + '</span></div>';
+}
+
+function renderResults(data, headers, specs) {
+  if (!data || !data.length) { clearResults(); return; }
+  const cols = headers.length, rows = data.length;
+
+  let html = '<table><thead><tr><th>#</th>';
+  headers.forEach(h => { html += '<th>' + h + '</th>'; });
+  html += '</tr></thead><tbody>';
+  data.forEach((row, i) => {
+    html += '<tr><td>' + (i + 1) + '</td>';
+    row.forEach(v => {
+      html += '<td>' + (typeof v === 'number' && isFinite(v) ? formatNum(v, 6) : String(v)) + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  tableWrap.innerHTML = html;
+
+  let s = '<div class="stats-grid">';
+  if (cols === 1) {
+    const vals = data.map(r => r[0]).filter(v => typeof v === 'number' && isFinite(v));
+    if (vals.length) {
+      const st = computeStats(vals);
+      s += statCard('数量', rows);
+      s += statCard('最小值', formatNum(st.min));
+      s += statCard('最大值', formatNum(st.max));
+      s += statCard('均值', formatNum(st.mean));
+      if (vals.length >= 2) {
+        s += statCard('中位数', formatNum(st.median));
+        s += statCard('标准差', formatNum(st.stdev));
+      }
+    }
+  } else {
+    s += '<div class="dim-stats" style="grid-column:1/-1"><div class="dim-stats-title">📈 各维度统计</div><div class="dim-stats-grid">';
+    for (let d = 0; d < cols; d++) {
+      const vals = data.map(r => r[d]).filter(v => typeof v === 'number' && isFinite(v));
+      if (!vals.length) continue;
+      const st = computeStats(vals);
+      const distLabel = (specs && specs[d]) ? DIST_DEFS[specs[d].dist].label : headers[d];
+      s += '<div class="dim-stat-block">' +
+        '<div class="dim-name">' + headers[d] + ' · ' + distLabel + '</div>' +
+        '<div class="dim-stats-inner">' +
+          '<span>最小值 <strong>' + formatNum(st.min) + '</strong></span>' +
+          '<span>最大值 <strong>' + formatNum(st.max) + '</strong></span>' +
+          '<span>均值 <strong>' + formatNum(st.mean) + '</strong></span>' +
+          (vals.length >= 2 ? '<span>中位数 <strong>' + formatNum(st.median) + '</strong></span>' : '') +
+          (vals.length >= 2 ? '<span>标准差 <strong>' + formatNum(st.stdev) + '</strong></span>' : '') +
+        '</div></div>';
+    }
+    s += '</div></div>';
+  }
+  s += '</div>';
+  statsContainer.innerHTML = s;
+
+  resultTitle.textContent = '📊 生成结果 · ' + rows + ' 行 × ' + cols + ' 维';
+  exportCsvBtn.disabled = false;
+}
+
+function clearResults() {
+  generatedData = [];
+  generatedHeaders = [];
+  currentSourceName = null;
+  tableWrap.innerHTML = '<div class="empty-msg">点击「生成」查看随机数</div>';
+  statsContainer.innerHTML = '';
+  resultTitle.textContent = '📊 生成结果';
+  exportCsvBtn.disabled = true;
+  highlightActiveRow(null);
+}
+
+/* ============================================================
+   9. 持久化：IndexedDB
+   ============================================================ */
+const CSV_DB_NAME = 'random_csv_db';
+const CSV_STORE = 'files';
+let _csvDB = null;
+
+function openCsvDB() {
+  if (_csvDB) return Promise.resolve(_csvDB);
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('当前环境不支持 IndexedDB')); return; }
+    const req = indexedDB.open(CSV_DB_NAME, 1);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(CSV_STORE)) {
+        const os = db.createObjectStore(CSV_STORE, { keyPath: 'id', autoIncrement: true });
+        os.createIndex('createdAt', 'createdAt', { unique: false });
+      }
+    };
+    req.onsuccess = () => { _csvDB = req.result; resolve(_csvDB); };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function csvSave(name, content) {
+  const db = await openCsvDB();
+  const rec = { name: name, content: content, size: new Blob([content]).size, createdAt: Date.now() };
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(CSV_STORE, 'readwrite').objectStore(CSV_STORE).add(rec);
+    req.onsuccess = () => resolve({ id: req.result, name: name, size: rec.size, createdAt: rec.createdAt });
+    req.onerror = () => reject(req.error);
+  });
+}
+async function csvList() {
+  const db = await openCsvDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(CSV_STORE, 'readonly').objectStore(CSV_STORE).getAll();
+    req.onsuccess = () => {
+      const rows = (req.result || []).map(function (r) {
+        return { id: r.id, name: r.name, size: r.size, createdAt: r.createdAt };
+      });
+      resolve(rows.sort((a, b) => b.createdAt - a.createdAt));
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+async function csvGet(id) {
+  const db = await openCsvDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(CSV_STORE, 'readonly').objectStore(CSV_STORE).get(id);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function csvDelete(id) {
+  const db = await openCsvDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(CSV_STORE, 'readwrite').objectStore(CSV_STORE).delete(id);
+    req.onsuccess = () => resolve(true);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function csvClear() {
+  const db = await openCsvDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(CSV_STORE, 'readwrite').objectStore(CSV_STORE).clear();
+    req.onsuccess = () => resolve(true);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function storageInfo() {
+  if (!navigator.storage || !navigator.storage.estimate) return null;
+  try {
+    const est = await navigator.storage.estimate();
+    return { usage: est.usage || 0, quota: est.quota || 0 };
+  } catch (e) { return null; }
+}
+
+/* ============================================================
+   10. CSV 组装 & 保存
+   ============================================================ */
+function buildCsvText() {
+  if (!generatedData || !generatedData.length) return null;
+  const headers = ['index'].concat(generatedHeaders);
+  let csv = headers.join(',') + '\n';
+  generatedData.forEach((row, i) => {
+    const vals = row.map(v => {
+      if (typeof v === 'number' && isFinite(v)) return String(v);
+      return '"' + String(v).replace(/"/g, '""') + '"';
+    });
+    csv += [i + 1].concat(vals).join(',') + '\n';
+  });
+  return csv;
+}
+function makeCsvFileName() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const ts = d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '_' +
+             p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+  return 'random_' + ts + '.csv';
+}
+
+async function exportCSV() {
+  const csv = buildCsvText();
+  if (!csv) { showToast('没有可导出的数据'); return; }
+  const name = makeCsvFileName();
+
+  try {
+    const rec = await csvSave(name, csv);
+    const info = await storageInfo();
+    let msg = '✅ 已写入应用私有目录\n' + rec.name + '（' + fmtBytes(rec.size) + '）';
+    if (info) msg += '\n已用 ' + fmtBytes(info.usage) + ' / 配额 ' + fmtBytes(info.quota);
+    showToast(msg, 4200);
+    renderCsvList();
+  } catch (e) {
+    try {
+      if (csv.length > 4 * 1024 * 1024) throw new Error('数据过大，localStorage 无法容纳（>4MB）');
+      localStorage.setItem('csv:' + name, csv);
+      showToast('已保存到 localStorage 兜底：\n' + name + '（' + fmtBytes(csv.length) + '）', 4000);
+      renderCsvList();
+    } catch (e2) {
+      showToast('保存失败：' + (e2.message || e.message));
+    }
+  }
+}
+
+/* ============================================================
+   11. CSV 解析（读取时用）
+   ============================================================ */
+function parseCsv(text) {
+  text = String(text).replace(/^\uFEFF/, '');
+  const rows = [];
+  let cur = '', row = [], inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charAt(i);
+    if (inQ) {
+      if (c === '"') {
+        if (text.charAt(i + 1) === '"') { cur += '"'; i++; }
+        else inQ = false;
+      } else cur += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { row.push(cur); cur = ''; }
+      else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+      else if (c === '\r') { /* 忽略 */ }
+      else cur += c;
+    }
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+
+/* 读取：把文件内容解析并展示到主结果区 */
+function loadCsvIntoView(name, content) {
+  if (!content) { showToast('文件内容为空'); return; }
+
+  let rows;
+  try { rows = parseCsv(content); }
+  catch (e) { showToast('解析失败：' + e.message); return; }
+
+  // 去掉末尾空行
+  while (rows.length && rows[rows.length - 1].every(v => v === '')) rows.pop();
+  if (rows.length < 2) { showToast('文件中没有数据行'); return; }
+
+  const headerRow = rows[0];
+  const dataRows = rows.slice(1);
+  const headers = headerRow.slice(1);   // 跳过首列 index
+
+  const data = dataRows.map(r => r.slice(1).map(v => {
+    if (v === '' || v === null || v === undefined) return '';
+    const n = Number(v);
+    return isFinite(n) ? n : v;
+  }));
+
+  if (data.length === 0 || headers.length === 0) {
+    showToast('文件格式无法识别');
+    return;
+  }
+
+  generatedData = data;
+  generatedHeaders = headers;
+  currentSourceName = name;
+  renderResults(data, headers, null);
+  resultTitle.textContent = '📄 已读取：' + name + ' · ' + data.length + ' 行 × ' + headers.length + ' 维';
+  exportCsvBtn.disabled = false;
+
+  showToast('已读取 ' + name + '\n' + data.length + ' 行 × ' + headers.length + ' 维', 3000);
+
+  // 高亮列表中被读取的文件
+  highlightActiveRow(name);
+
+  // 滚动到结果区
+  const resultsEl = document.getElementById('results');
+  if (resultsEl) {
+    try { resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    catch (e) { resultsEl.scrollIntoView(); }
+  }
+}
+
+/* ============================================================
+   12. 文件列表渲染
+   ============================================================ */
+let _activeFileName = null;
+
+function highlightActiveRow(name) {
+  _activeFileName = name;
+  const rows = document.querySelectorAll('#csvList .csv-row');
+  rows.forEach(r => {
+    const n = r.getAttribute('data-name');
+    r.classList.toggle('active', !!name && n === name);
+  });
+}
+
+async function renderCsvList() {
+  const box = document.getElementById('csvList');
+  if (!box) return;
+
+  let idbRows = [];
+  try { idbRows = await csvList(); } catch (e) { /* ignore */ }
+
+  const lsKeys = Object.keys(localStorage).filter(k => k.indexOf('csv:') === 0);
+  const merged = idbRows.map(r => ({
+    id: String(r.id), name: r.name, size: r.size,
+    createdAt: r.createdAt, source: 'idb'
+  })).concat(lsKeys.map(k => ({
+    id: 'ls:' + k, name: k.slice(4),
+    size: (localStorage.getItem(k) || '').length,
+    createdAt: 0, source: 'ls'
+  })));
+
+  if (!merged.length) {
+    box.innerHTML = '（暂无文件）';
+    return;
+  }
+
+  box.innerHTML = merged.map(r =>
+    '<div class="csv-row" data-name="' + r.name.replace(/"/g, '&quot;') + '">' +
+      '<span class="csv-name">' + r.name +
+        '<span class="csv-meta">· ' + fmtBytes(r.size) +
+        ' · ' + (r.source === 'idb' ? 'IndexedDB' : 'localStorage') +
+        ' · ' + fmtTime(r.createdAt) + '</span>' +
+      '</span>' +
+      '<button class="mini-btn" type="button" data-act="read" data-id="' + r.id + '">读取</button>' +
+      '<button class="mini-btn danger" type="button" data-act="delete" data-id="' + r.id + '">删除</button>' +
+    '</div>'
+  ).join('');
+
+  highlightActiveRow(_activeFileName);
+}
+
+/* ============================================================
+   13. 列表按钮事件（读取 / 删除）
+   ============================================================ */
+document.addEventListener('click', async function (e) {
+  const btn = e.target.closest('#csvList [data-act]');
+  if (!btn) return;
+  const act = btn.dataset.act;
+  const id = btn.dataset.id;
+
+  if (act === 'read') {
+    if (id.indexOf('ls:') === 0) {
+      const key = id.slice(3);
+      const content = localStorage.getItem(key) || '';
+      loadCsvIntoView(key.slice(4), content);
+    } else {
+      const rec = await csvGet(Number(id));
+      if (rec) loadCsvIntoView(rec.name, rec.content);
+      else showToast('文件不存在或已被删除');
+    }
+  } else if (act === 'delete') {
+    if (id.indexOf('ls:') === 0) localStorage.removeItem(id.slice(3));
+    else await csvDelete(Number(id));
+    renderCsvList();
+    showToast('已删除');
+  }
+});
+
+/* ============================================================
+   14. UI 构建
+   ============================================================ */
+function populateDistSelect(sel, selected) {
+  sel.innerHTML = '';
+  DIST_NAMES.forEach(n => {
+    const o = document.createElement('option');
+    o.value = n;
+    o.textContent = DIST_DEFS[n].label;
+    if (n === selected) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function buildParamInputs(dist, container, values) {
+  const defs = getParamDefs(dist);
+  container.innerHTML = '';
+  defs.forEach(def => {
+    const wrap = document.createElement('div');
+    wrap.className = 'param-item';
+    const label = document.createElement('label');
+    label.textContent = def.label;
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.step = def.step === 'any' ? 'any' : String(def.step);
+    const val = (values && values[def.name] !== undefined) ? values[def.name] : def.default;
+    if (val !== null && val !== undefined && val !== '') inp.value = val;
+    inp.placeholder = (def.default !== null && def.default !== undefined) ? String(def.default)
+                      : (dist === 'triangular' && def.name === 'mode' ? '默认 midpoint' : '');
+    wrap.appendChild(label);
+    wrap.appendChild(inp);
+    container.appendChild(wrap);
+  });
+}
+
+function buildDimCard(index, dist, params) {
+  const card = document.createElement('div');
+  card.className = 'dim-card';
+
+  const labelDiv = document.createElement('div');
+  labelDiv.className = 'dim-label';
+  labelDiv.textContent = '维度 ' + (index + 1);
+
+  const distDiv = document.createElement('div');
+  distDiv.className = 'dim-dist';
+  const sel = document.createElement('select');
+  populateDistSelect(sel, dist);
+  sel.addEventListener('change', function () {
+    const newDist = this.value;
+    const paramsBox = card.querySelector('.dim-params');
+    buildParamInputs(newDist, paramsBox, {});
+  });
+  distDiv.appendChild(sel);
+
+  const paramsDiv = document.createElement('div');
+  paramsDiv.className = 'dim-params';
+  buildParamInputs(dist, paramsDiv, params || {});
+
+  card.appendChild(labelDiv);
+  card.appendChild(distDiv);
+  card.appendChild(paramsDiv);
+  return card;
+}
+
+function renderPerDimCards() {
+  dimCardsContainer.innerHTML = '';
+  perDimSpecs.forEach((spec, i) => {
+    dimCardsContainer.appendChild(buildDimCard(i, spec.dist, spec.params));
+  });
+}
+
+function syncPerDimFromDOM() {
+  const cards = dimCardsContainer.querySelectorAll('.dim-card');
+  const out = [];
+  cards.forEach(card => {
+    const dist = card.querySelector('.dim-dist select').value;
+    const params = parseParamsFromDOM(dist, card.querySelector('.dim-params'));
+    out.push({ dist: dist, params: params });
+  });
+  perDimSpecs = out;
+}
+
+function updateSameDistUI() {
+  currentDist = distSelect.value;
+  buildParamInputs(currentDist, paramInputs, {});
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  modeTabs.querySelectorAll('button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+
+  if (mode === 'single' || mode === 'multi-same') {
+    sameDistConfig.style.display = 'grid';
+    perDimConfig.style.display = 'none';
+    dimsGroup.style.display = mode === 'multi-same' ? 'flex' : 'none';
+    if (mode === 'single') dimsInput.value = 1;
+  } else {
+    sameDistConfig.style.display = 'none';
+    perDimConfig.style.display = 'flex';
+    renderPerDimCards();
+  }
+  clearResults();
+}
+
+/* ============================================================
+   15. 事件
+   ============================================================ */
+distSelect.addEventListener('change', updateSameDistUI);
+
+modeTabs.addEventListener('click', function (e) {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const m = btn.dataset.mode;
+  if (m === currentMode) return;
+  setMode(m);
+});
+
+addDimBtn.addEventListener('click', function () {
+  syncPerDimFromDOM();
+  perDimSpecs.push({ dist: 'uniform', params: { min: 0, max: 1 } });
+  renderPerDimCards();
+});
+
+resetDimBtn.addEventListener('click', function () {
+  perDimSpecs = [{ dist: 'uniform', params: { min: 0, max: 1 } }];
+  renderPerDimCards();
+});
+
+generateBtn.addEventListener('click', function () { generateData(); });
+
+exportCsvBtn.addEventListener('click', exportCSV);
+clearBtn.addEventListener('click', clearResults);
+
+document.getElementById('csvQuotaBtn').addEventListener('click', async function () {
+  const info = await storageInfo();
+  if (!info) { showToast('当前环境不支持配额查询'); return; }
+  const pct = info.quota ? (info.usage / info.quota * 100).toFixed(2) : '?';
+  showToast('已用 ' + fmtBytes(info.usage) + ' / 配额 ' + fmtBytes(info.quota) + '（' + pct + '%）', 4200);
+});
+document.getElementById('csvRefreshBtn').addEventListener('click', renderCsvList);
+document.getElementById('csvClearBtn').addEventListener('click', async function () {
+  if (!confirm('确定清空所有已保存的 CSV 文件？')) return;
+  try { await csvClear(); } catch (e) { /* ignore */ }
+  Object.keys(localStorage).filter(k => k.indexOf('csv:') === 0).forEach(k => localStorage.removeItem(k));
+  renderCsvList();
+  showToast('已清空');
+});
+
+document.addEventListener('keydown', function (e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    generateBtn.click();
+  }
+});
+
+/* ============================================================
+   16. 初始化
+   ============================================================ */
+(function init() {
+  populateDistSelect(distSelect, 'uniform');
+  buildParamInputs('uniform', paramInputs, { min: 0, max: 1 });
+  setMode('single');
+  renderCsvList();
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(function () {});
+  }
+  setTimeout(function () { generateBtn.click(); }, 120);
+})();
+
+})();
+</script>
+</body>
+</html>
